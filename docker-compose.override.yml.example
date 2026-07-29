@@ -1,0 +1,35 @@
+# Copy to docker-compose.override.yml (which is gitignored) and put your REAL
+# values here. Docker Compose automatically merges this over docker-compose.yml,
+# so the committed file keeps placeholders and your secrets never touch git.
+#
+#   cp docker-compose.override.yml.example docker-compose.override.yml
+#   # edit it, then:
+#   docker compose up -d
+
+services:
+  oci-ipsec:
+    # To run the image published to GHCR instead of building locally,
+    # uncomment this and run `docker compose pull && docker compose up -d`.
+    # (You can also delete the `build:` line from docker-compose.yml.)
+    #image: ghcr.io/YOUR_GH_USERNAME/YOUR_REPO:latest
+
+    environment:
+      # --- your real values ---
+      LOCAL_SUBNET: "172.28.0.0/24"
+      VCN_SUBNET: "10.0.0.0/16"
+      LOCAL_ID: "home.example.com"
+      OCI_COMPARTMENT_ID: "ocid1.compartment.oc1..REAL"
+      OCI_DRG_ID: "ocid1.drg.oc1..REAL"
+
+      # --- OCI auth: instance principal (on an OCI VM) ---
+      #OCI_CLI_AUTH: "instance_principal"
+
+      # --- OCI auth: API key (off-OCI) ---
+      OCI_CLI_USER: "ocid1.user.oc1..REAL"
+      OCI_CLI_TENANCY: "ocid1.tenancy.oc1..REAL"
+      OCI_CLI_FINGERPRINT: "aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99"
+      OCI_CLI_REGION: "us-ashburn-1"
+      OCI_KEY_CONTENT: |
+        -----BEGIN PRIVATE KEY-----
+        ...paste your real private key here...
+        -----END PRIVATE KEY-----

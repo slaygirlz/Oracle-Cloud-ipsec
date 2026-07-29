@@ -1,0 +1,9 @@
+# Secrets / local config — NEVER commit these
+docker-compose.override.yml
+.env
+*.pem
+.oci/
+oci_api_key*
+
+# misc
+*.log

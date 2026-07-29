@@ -1,0 +1,74 @@
+services:
+  oci-ipsec:
+    build: .
+    image: oci-ipsec:latest
+    container_name: oci-ipsec
+    restart: unless-stopped
+
+    # ----- Docker-level settings (NOT environment variables) -----
+    networks:
+      - ipsecnet
+    cap_add:
+      - NET_ADMIN            # required: lets charon install XFRM policy + routes
+    # IP forwarding is only needed if OTHER containers/hosts route through this
+    # one to reach the VCN. Uncomment to enable:
+    #sysctls:
+    #  - net.ipv4.ip_forward=1
+
+    environment:
+      # ===== Which mode? =====
+      # static  = fixed tunnel from the values you paste below.
+      # managed = watcher grabs your public IP and recreates the OCI tunnel
+      #           whenever it changes (this is the "auto" behaviour you want).
+      MODE: "managed"
+
+      # ===== Always required =====
+      LOCAL_SUBNET: "172.28.0.0/24"         # your on-prem CIDR = the OCI static route
+      VCN_SUBNET: "10.0.0.0/16"             # the OCI VCN CIDR you want to reach
+      LOCAL_ID: "home.example.com"          # CPE IKE identifier
+
+      # ===== managed mode: OCI targets =====
+      OCI_COMPARTMENT_ID: "ocid1.compartment.oc1..xxxx"
+      OCI_DRG_ID: "ocid1.drg.oc1..xxxx"
+      CHECK_INTERVAL: "120"                 # seconds between public-IP checks
+      IP_CHECK_URL: "https://www.cloudflare.com/cdn-cgi/trace"   # Cloudflare
+
+      # ===== static mode only (ignored when MODE=managed) =====
+      #OCI_VPN_IP_1: "203.0.113.10"
+      #PSK_1: "CHANGE_ME_tunnel1_shared_secret"
+      #OCI_VPN_IP_2: "203.0.113.11"
+      #PSK_2: "CHANGE_ME_tunnel2_shared_secret"
+
+      # ===== crypto (MUST match your OCI tunnel) =====
+      IKE_VERSION: "2"
+      IKE_PROPOSAL: "aes256-sha384-modp2048"
+      ESP_PROPOSAL: "aes256-sha256-modp2048"
+
+      # ===== behaviour / timers =====
+      DPD_DELAY: "30s"
+      DPD_ACTION: "restart"
+      START_ACTION: "start"
+      ENCAP: "yes"
+      IKE_REKEY_TIME: "8h"
+      ESP_REKEY_TIME: "1h"
+      LOG_LEVEL: "1"
+
+      # ===== OCI ACCOUNT LINK (required for managed mode) =====
+      # Option A: container runs ON an OCI VM (simplest, no keys)
+      #OCI_CLI_AUTH: "instance_principal"
+      # Option B: API key (off-OCI)
+      #OCI_CLI_USER: "ocid1.user.oc1..xxxx"
+      #OCI_CLI_TENANCY: "ocid1.tenancy.oc1..xxxx"
+      #OCI_CLI_FINGERPRINT: "aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99"
+      #OCI_CLI_REGION: "us-ashburn-1"
+      #OCI_KEY_CONTENT: |
+      #  -----BEGIN PRIVATE KEY-----
+      #  ...paste the whole private key here, indented like this...
+      #  -----END PRIVATE KEY-----
+
+networks:
+  ipsecnet:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/24
